@@ -12,4 +12,7 @@ typedef struct {
   ht_item **items;
 } ht_hash_table;
 
+ht_hash_table *ht_new();
+void ht_del_hash_table(ht_hash_table *);
+
 #endif // !HASH_TABLE_H
