@@ -8,6 +8,12 @@ int main() {
   const char *t = ht_search(ht, "test");
   printf("%s\n", t);
 
+  ht_delete(ht, "test");
+
+  t = ht_search(ht, "test");
+  if (t != NULL)
+    printf("%s\n", t);
+
   ht_del_hash_table(ht);
   return 0;
 }

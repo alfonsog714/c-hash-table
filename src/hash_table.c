@@ -8,6 +8,8 @@
 #define HT_PRIME_1 131
 #define HT_PRIME_2 149
 
+static ht_item HT_DELETED_ITEM = {NULL, NULL};
+
 static int ht_hash(const char *s, const int a, const int m) {
   long hash = 0;
   const int len_s = strlen(s);
@@ -20,7 +22,8 @@ static int ht_hash(const char *s, const int a, const int m) {
   return (int)hash;
 }
 
-static int get_hash(const char *s, const int num_buckets, const int attempt) {
+static int ht_get_hash(const char *s, const int num_buckets,
+                       const int attempt) {
   const int hash_a = ht_hash(s, HT_PRIME_1, num_buckets);
   const int hash_b = ht_hash(s, HT_PRIME_1, num_buckets);
   return (hash_a + (attempt * (hash_b + 1))) % num_buckets;
@@ -51,7 +54,7 @@ ht_hash_table *ht_new() {
 void ht_del_hash_table(ht_hash_table *ht) {
   for (int i = 0; i < ht->size; i++) {
     ht_item *item = ht->items[i];
-    if (item != NULL) {
+    if (item != NULL && item != &HT_DELETED_ITEM) {
       ht_del_item(item);
     }
   }
@@ -62,11 +65,18 @@ void ht_del_hash_table(ht_hash_table *ht) {
 
 void ht_insert(ht_hash_table *ht, const char *key, const char *value) {
   ht_item *new_item = ht_new_item(key, value);
-  int index = get_hash(new_item->key, ht->size, 0);
+  int index = ht_get_hash(new_item->key, ht->size, 0);
   ht_item *curr_item = ht->items[index];
   int i = 1;
   while (curr_item != NULL) {
-    index = get_hash(new_item->key, ht->size, i);
+    if (curr_item != &HT_DELETED_ITEM) {
+      if (strcmp(curr_item->key, key) == 0) {
+        ht_del_item(curr_item);
+        ht->items[index] = new_item;
+        return;
+      }
+    }
+    index = ht_get_hash(new_item->key, ht->size, i);
     curr_item = ht->items[index];
     i++;
   }
@@ -76,19 +86,41 @@ void ht_insert(ht_hash_table *ht, const char *key, const char *value) {
 }
 
 char *ht_search(ht_hash_table *ht, const char *key) {
-  int index = get_hash(key, ht->size, 0);
+  int index = ht_get_hash(key, ht->size, 0);
   ht_item *item = ht->items[index];
   int i = 1;
 
   while (item != NULL) {
-    if (strcmp(item->key, key) == 0) {
-      return item->value;
+    if (item != &HT_DELETED_ITEM) {
+      if (strcmp(item->key, key) == 0) {
+        return item->value;
+      }
     }
 
-    index = get_hash(key, ht->size, i);
+    index = ht_get_hash(key, ht->size, i);
     item = ht->items[index];
     i++;
   }
 
   return NULL;
+}
+
+void ht_delete(ht_hash_table *ht, const char *key) {
+  int index = ht_get_hash(key, ht->size, 0);
+  ht_item *item = ht->items[index];
+
+  int i = 1;
+  while (item != NULL) {
+    if (item != &HT_DELETED_ITEM) {
+      if (strcmp(item->key, key) == 0) {
+        ht_del_item(item);
+        ht->items[index] = &HT_DELETED_ITEM;
+      }
+    }
+
+    index = ht_get_hash(key, ht->size, i);
+    item = ht->items[index];
+    i++;
+  }
+  ht->count--;
 }
