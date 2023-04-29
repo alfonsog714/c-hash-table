@@ -1,4 +1,4 @@
-GCC=gcc -o main -Wall
+GCC=gcc -o build/main -Wall
 LIBS=m
 SOURCE=src/main.c src/hash_table.c
 
